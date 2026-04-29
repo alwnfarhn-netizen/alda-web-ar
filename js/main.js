@@ -134,7 +134,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 5. Jalankan MindAR
             await mindarThree.start();
-            
+
+            // [W1 Fix] Izin kamera = user gesture → coba resume AudioContext sekarang
+            // Ini memastikan audio bisa diputar di scan pertama tanpa tap tambahan
+            if (Howl && !audioUnlocked && Howler.ctx && Howler.ctx.state === 'suspended') {
+                Howler.ctx.resume().then(() => {
+                    audioUnlocked = true;
+                    console.log("ALDA: Audio unlocked setelah kamera diizinkan.");
+                }).catch(() => {
+                    console.log("ALDA: Audio menunggu interaksi eksplisit user.");
+                });
+            } else if (Howl && !audioUnlocked && Howler.ctx && Howler.ctx.state === 'running') {
+                audioUnlocked = true; // AudioContext sudah running, langsung unlock
+            }
+
             // Sembunyikan loading screen saat siap
             loadingScreen.style.display = 'none';
             console.log("ALDA: AR Ready");
@@ -378,8 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const group = new THREE.Group();
 
         try {
-            // Kepala
-            const headGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            // Kepala — [P1 Fix] 16×16 segmen cukup untuk placeholder, hemat ~75% polygon vs 32×32
+            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
             const headMat = new THREE.MeshPhongMaterial({ color: config.color });
             const head = new THREE.Mesh(headGeo, headMat);
             group.add(head);
@@ -401,17 +414,23 @@ document.addEventListener('DOMContentLoaded', () => {
             group.add(mouth);
 
             // Label Teks (Sprite)
+            // [P2 Fix] Canvas 128×32 (setengah dari 256×64) — hemat 75% memori GPU texture
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = 256; canvas.height = 64;
-            context.font = 'Bold 40px Arial';
+            canvas.width = 128; canvas.height = 32;
+            context.font = 'Bold 20px Arial';
             context.fillStyle = 'white';
             context.textAlign = 'center';
-            context.fillText(config.label.toUpperCase(), 128, 45);
+            context.fillText(config.label.toUpperCase(), 64, 22);
             const texture = new THREE.CanvasTexture(canvas);
-            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+            texture.needsUpdate = true;
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
             sprite.position.set(0, 0.7, 0);
             sprite.scale.set(1, 0.25, 1);
+            // Simpan referensi untuk disposal nanti jika dibutuhkan
+            group.userData.texture = texture;
+            group.userData.spriteMat = spriteMat;
             group.add(sprite);
 
         } catch (e) {
