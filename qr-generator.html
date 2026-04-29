@@ -3,110 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALDA — QR Generator (Tool)</title>
+    <title>ALDA - QR Card Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
-        :root {
-            --primary: #f4a261;
-            --dark: #1a1a2e;
-        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
+            background-color: #f0f4f3;
+            color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 40px 20px;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            max-width: 500px;
+        h1 { color: #A3D2CA; margin-bottom: 30px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
             width: 100%;
+            max-width: 1200px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-align: center;
         }
-        h1 { color: var(--dark); margin-bottom: 10px; }
-        p { color: #666; margin-bottom: 30px; }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-            font-size: 16px;
+        .card h2 { margin-top: 0; font-size: 24px; color: #4A4A4A; }
+        .qr-container {
+            margin: 20px 0;
+            padding: 10px;
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 10px;
         }
         button {
-            background: var(--primary);
-            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
+            background-color: #A3D2CA;
+            color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: transform 0.2s;
+            margin-top: 10px;
         }
-        button:hover { opacity: 0.9; }
-        #qrcode {
-            margin-top: 30px;
-            display: flex;
-            justify-content: center;
-        }
-        .back-link {
-            margin-top: 20px;
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
+        button:hover { transform: scale(1.05); background-color: #8dbcb4; }
+        .download-all {
+            margin-bottom: 40px;
+            padding: 15px 40px;
+            font-size: 18px;
+            background-color: #4A4A4A;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>QR Generator ALDA</h1>
-        <p>Gunakan alat ini untuk membuat QR Code yang mengarah ke link aplikasi ALDA di GitHub Pages.</p>
-        
-        <input type="text" id="url-input" placeholder="Masukkan URL GitHub Pages (e.g. https://user.github.io/alda/)" value="">
-        <button onclick="generateQR()">Generate QR Code</button>
+    <h1>ALDA QR Card Generator</h1>
+    
+    <button id="download-all-btn" class="download-all">📦 Download Semua (ZIP)</button>
 
-        <div id="qrcode"></div>
-        
-        <a href="index.html" class="back-link">← Kembali ke Aplikasi</a>
+    <div class="grid" id="qr-grid">
+        <!-- Cards will be injected here -->
     </div>
 
-    <!-- QR Code Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // Set default value based on current location if it looks like a web server
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            document.getElementById('url-input').value = window.location.href.split('qr-generator.html')[0];
-        } else {
-            document.getElementById('url-input').value = "https://[username].github.io/alda/";
-        }
+        const emotions = [
+            { id: 'senang', label: 'Senang' },
+            { id: 'sedih', label: 'Sedih' },
+            { id: 'marah', label: 'Marah' },
+            { id: 'takut', label: 'Takut' },
+            { id: 'terkejut', label: 'Terkejut' }
+        ];
 
-        let qrcode = null;
+        const username = "alwnfarhn-netizen";
+        const repo = "alda-web-ar";
+        const baseUrl = `https://${username}.github.io/${repo}/`;
+        const qrGrid = document.getElementById('qr-grid');
+        const qrObjects = {};
 
-        function generateQR() {
-            const url = document.getElementById('url-input').value;
-            if (!url) return alert('Masukkan URL terlebih dahulu');
+        emotions.forEach(emotion => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const title = document.createElement('h2');
+            title.innerText = emotion.label;
+            card.appendChild(title);
 
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = ""; // Clear existing
+            const qrContainer = document.createElement('div');
+            qrContainer.className = 'qr-container';
+            qrContainer.id = `qr-${emotion.id}`;
+            card.appendChild(qrContainer);
 
-            qrcode = new QRCode(qrContainer, {
-                text: url,
-                width: 256,
-                height: 256,
-                colorDark : "#1a1a2e",
+            const downloadBtn = document.createElement('button');
+            downloadBtn.innerText = '⬇️ Download PNG';
+            downloadBtn.onclick = () => downloadSingle(emotion.id, emotion.label);
+            card.appendChild(downloadBtn);
+
+            qrGrid.appendChild(card);
+
+            // Generate QR
+            const qrcode = new QRCode(qrContainer, {
+                text: `${baseUrl}?emosi=${emotion.id}`,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
+            qrObjects[emotion.id] = qrcode;
+        });
+
+        function downloadSingle(id, label) {
+            const img = document.querySelector(`#qr-${id} img`);
+            if (img) {
+                const link = document.createElement('a');
+                link.download = `QR_ALDA_${label}.png`;
+                link.href = img.src;
+                link.click();
+            }
         }
 
-        // Auto generate first time
-        window.onload = generateQR;
+        async function downloadAll() {
+            const zip = new JSZip();
+            const folder = zip.folder("QR_ALDA_Cards");
+
+            for (const emotion of emotions) {
+                const img = document.querySelector(`#qr-${emotion.id} img`);
+                if (img) {
+                    const dataUrl = img.src;
+                    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+                    folder.file(`QR_ALDA_${emotion.label}.png`, base64Data, {base64: true});
+                }
+            }
+
+            const content = await zip.generateAsync({type:"blob"});
+            saveAs(content, "ALDA_QR_Cards.zip");
+        }
+
+        document.getElementById('download-all-btn').onclick = downloadAll;
     </script>
 </body>
 </html>

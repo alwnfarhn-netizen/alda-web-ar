@@ -12,4 +12,5 @@ Thumbs.db
 
 # Project specific
 assets/markers/*.mind.tmp
+qr-generator.html
 *.bak

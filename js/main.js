@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const scanningIndicator = document.getElementById('scanning-indicator');
     const container = document.querySelector("#container");
 
+    // Ambil parameter emosi dari URL (jika ada)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetEmotionId = urlParams.get('emosi');
+
     let mindarThree = null;
     let audioInstances = {}; // Menyimpan instance Howl per emosi
     let mixers = []; // Menyimpan AnimationMixer untuk update frame
@@ -49,6 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const { renderer, scene, camera } = mindarThree;
+
+            // Jika ada parameter emosi, sesuaikan teks panduan
+            if (targetEmotionId && emotions[targetEmotionId]) {
+                const indicatorText = scanningIndicator.querySelector('p');
+                if (indicatorText) {
+                    indicatorText.innerText = `Arahkan kamera ke kartu ${emotions[targetEmotionId].label}`;
+                }
+            }
 
             // Renderer setup (alpha true sudah default di MindARThree, tapi kita pastikan)
             renderer.setClearColor(new THREE.Color(), 0); 
