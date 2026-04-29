@@ -132,8 +132,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            // 5. Jalankan MindAR
-            await mindarThree.start();
+            // 5. Jalankan MindAR dengan timeout agar tidak hang jika targets.mind tidak ada
+            const TIMEOUT_MS = 20000; // 20 detik
+            const startTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(
+                    "Waktu muat habis (20 detik). " +
+                    "Pastikan file targets.mind ada di assets/markers/ " +
+                    "dan koneksi internet stabil."
+                )), TIMEOUT_MS)
+            );
+
+            // Perbarui teks loading agar user tahu apa yang sedang terjadi
+            const loadingText = loadingScreen.querySelector('p');
+            if (loadingText) loadingText.textContent = 'Meminta izin kamera...';
+
+            await Promise.race([mindarThree.start(), startTimeout]);
+
+            if (loadingText) loadingText.textContent = 'AR siap!';
 
             // [W1 Fix] Izin kamera = user gesture → coba resume AudioContext sekarang
             // Ini memastikan audio bisa diputar di scan pertama tanpa tap tambahan
@@ -367,20 +382,36 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Deteksi jenis error untuk pesan yang lebih spesifik
+        const msg = error.message || '';
+        let userMessage = '';
+        let hint = '';
+
+        if (msg.includes('camera') || msg.includes('permission') || msg.includes('NotAllowed')) {
+            userMessage = '📷 Izin kamera ditolak.';
+            hint = 'Ketuk ikon kunci di address bar browser, lalu aktifkan izin Kamera, kemudian muat ulang.';
+        } else if (msg.includes('Waktu muat habis') || msg.includes('targets.mind')) {
+            userMessage = '📁 File marker (targets.mind) tidak ditemukan.';
+            hint = 'Upload file targets.mind ke folder <code>assets/markers/</code> menggunakan MindAR Image Compiler.';
+        } else if (msg.includes('MindAR') || msg.includes('mind-ar')) {
+            userMessage = '📦 Library MindAR gagal dimuat.';
+            hint = 'Periksa koneksi internet Anda, lalu coba lagi.';
+        } else {
+            userMessage = '⚠️ Gagal memulai AR.';
+            hint = msg || 'Terjadi kesalahan tidak dikenal.';
+        }
+
         loadingScreen.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: #333;">
-                <p>⚠️ <strong>Gagal Memulai AR</strong></p>
-                <p>${error.message.includes('camera') || error.message.includes('permission') 
-                    ? "Izinkan akses kamera untuk menggunakan media ini." 
-                    : error.message}</p>
-                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 10px 20px; border-radius: 20px; border: none; background: #4a90e2; color: white;">Coba Lagi</button>
+            <div style="padding:24px;text-align:center;color:#333;font-family:sans-serif;max-width:320px;margin:0 auto">
+                <p style="font-size:1.1rem;font-weight:700;margin-bottom:8px">${userMessage}</p>
+                <p style="font-size:0.9rem;color:#555;line-height:1.5;margin-bottom:20px">${hint}</p>
+                <button onclick="window.location.reload()"
+                    style="padding:10px 28px;border-radius:24px;border:none;background:#4a90e2;color:white;font-size:1rem;cursor:pointer">
+                    🔄 Coba Lagi
+                </button>
+                ${!window.isSecureContext ? '<p style="font-size:11px;color:#888;margin-top:14px">⚠️ Web AR memerlukan HTTPS.</p>' : ''}
             </div>
         `;
-
-        // Cek WebXR (Optional info)
-        if (!window.isSecureContext) {
-            loadingScreen.innerHTML += `<p style="font-size: 12px; margin-top: 10px;">Catatan: Web AR memerlukan koneksi HTTPS.</p>`;
-        }
     }
 
     /**
