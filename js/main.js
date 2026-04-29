@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isMuted = !isMuted;
                 Howler.mute(isMuted);
                 muteBtn.innerText = isMuted ? '🔇' : '🔊';
+                muteBtn.setAttribute('aria-label', isMuted ? 'Aktifkan suara' : 'Matikan suara');
                 muteBtn.classList.toggle('muted', isMuted);
                 
                 // Jika pertama kali klik, unlock audio
@@ -205,20 +206,33 @@ document.addEventListener('DOMContentLoaded', () => {
         // Interaction workaround untuk browser modern
         window.addEventListener('touchstart', unlockAudio, { once: true });
         window.addEventListener('click', unlockAudio, { once: true });
+        window.addEventListener('mousedown', unlockAudio, { once: true });
     }
 
     /**
-     * Workaround untuk kebijakan autoplay browser
+     * Workaround untuk kebijakan autoplay browser (terutama iOS Safari)
      */
     function unlockAudio() {
         if (audioUnlocked) return;
         
+        // Resume AudioContext jika dalam keadaan suspended (khusus Chrome/Safari)
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+            Howler.ctx.resume();
+        }
+
         // Buat buffer kosong dan play untuk memicu unlock
-        const silent = new Howl({ src: ['data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='] });
+        const silent = new Howl({ 
+            src: ['data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='],
+            onplay: () => {
+                audioUnlocked = true;
+                console.log("Audio Unlocked & Context Resumed");
+                // Hapus listener setelah berhasil
+                window.removeEventListener('click', unlockAudio);
+                window.removeEventListener('touchstart', unlockAudio);
+                window.removeEventListener('mousedown', unlockAudio);
+            }
+        });
         silent.play();
-        
-        audioUnlocked = true;
-        console.log("Audio Unlocked");
     }
 
     /**

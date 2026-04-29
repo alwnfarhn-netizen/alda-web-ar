@@ -1,8 +1,8 @@
 :root {
   --primary-color: #A3D2CA;
   --bg-white: #FFFFFF;
-  --text-dark: #4A4A4A;
-  --overlay-bg: rgba(255, 255, 255, 0.85);
+  --text-dark: #2D3436; /* Higher contrast dark gray */
+  --overlay-bg: rgba(255, 255, 255, 0.90); /* Increased opacity for better contrast */
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   --font-main: 'Outfit', 'Segoe UI', Roboto, sans-serif;
   
@@ -58,7 +58,7 @@ body {
   padding: 1.2rem 2rem;
   border-radius: 1.25rem;
   font-size: 1.75rem; /* ~28px */
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-dark);
   align-self: center;
   box-shadow: var(--shadow);

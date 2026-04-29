@@ -50,11 +50,11 @@
                 <p>Arahkan kamera ke kartu</p>
             </div>
 
-            <div id="emotion-label" class="emotion-label">Senang</div>
+            <div id="emotion-label" class="emotion-label" aria-live="polite">Senang</div>
             
-            <div class="teacher-controls">
-                <button id="restart-btn" class="ctrl-btn" title="Muat Ulang">🔄</button>
-                <button id="mute-btn" class="ctrl-btn" title="Suara">🔊</button>
+            <div class="teacher-controls" role="group" aria-label="Kontrol Pengembang/Guru">
+                <button id="restart-btn" class="ctrl-btn" aria-label="Muat ulang aplikasi" title="Muat Ulang">🔄</button>
+                <button id="mute-btn" class="ctrl-btn" aria-label="Aktifkan atau matikan suara" title="Suara">🔊</button>
             </div>
 
             <div id="loading-screen">
