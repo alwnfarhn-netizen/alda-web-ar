@@ -1,3 +1,14 @@
+/**
+ * Konfigurasi Emosi ALDA
+ *
+ * CATATAN TESTING:
+ * targets.mind saat ini menggunakan sample dari MindAR (band-example, 4 target).
+ * markerIndex 0–3 sesuai dengan gambar di halaman scan-test.html.
+ *
+ * Untuk produksi: kompilasi kartu emosi asli di
+ * https://hiukim.github.io/mind-ar-js-doc/tools/compile/
+ * dan tambahkan kembali markerIndex 4 untuk "terkejut".
+ */
 const emotions = {
   senang: {
     id: "senang",
@@ -30,15 +41,8 @@ const emotions = {
     audioPath: "assets/audio/takut.mp3",
     markerIndex: 3,
     color: "#A29BFE"
-  },
-  terkejut: {
-    id: "terkejut",
-    label: "Terkejut",
-    modelPath: "assets/models/terkejut.glb",
-    audioPath: "assets/audio/terkejut.mp3",
-    markerIndex: 4,
-    color: "#55EFC4"
   }
+  // terkejut (markerIndex: 4) — akan diaktifkan setelah targets.mind final dikompilasi
 };
 
 export default emotions;

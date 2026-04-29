@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALDA - Kartu Marker Testing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #A3D2CA;
+            --bg: #f0f9f8;
+            --card-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        header h1 {
+            font-size: 1.75rem;
+            color: #2d3436;
+            margin-bottom: 0.5rem;
+        }
+        header p {
+            color: #636e72;
+            font-size: 1rem;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: #2d3436;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 0.75rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-4px); }
+        .card-header {
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: contain;
+            background: #f8f9fa;
+            padding: 1rem;
+        }
+        .card-footer {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: #636e72;
+            text-align: center;
+        }
+        /* Warna per emosi */
+        .senang .card-header { background: #FFD166; }
+        .sedih  .card-header { background: #74B9FF; }
+        .marah  .card-header { background: #FF7675; }
+        .takut  .card-header { background: #A29BFE; }
+
+        .launch-btn {
+            display: block;
+            width: fit-content;
+            margin: 0 auto 2rem;
+            padding: 1rem 2.5rem;
+            background: var(--primary);
+            color: #2d3436;
+            text-decoration: none;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 16px rgba(163,210,202,0.5);
+            transition: transform 0.2s;
+        }
+        .launch-btn:hover { transform: scale(1.04); }
+
+        .note {
+            max-width: 620px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--card-shadow);
+            font-size: 0.9rem;
+            color: #636e72;
+            line-height: 1.7;
+        }
+        .note strong { color: #2d3436; }
+        .step {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            margin: 0.35rem 0;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .step-num {
+            background: var(--primary);
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="badge">🧪 Mode Testing</div>
+        <h1>Kartu Marker ALDA (Sample)</h1>
+        <p>Cetak atau tampilkan kartu di bawah ini, lalu arahkan kamera AR ke salah satu kartu</p>
+    </header>
+
+    <div class="grid">
+        <div class="card senang">
+            <div class="card-header">😄 Senang <small style="font-weight:400;font-size:0.8rem;">(marker 0)</small></div>
+            <img src="assets/markers/bear-color.png" alt="Kartu marker Senang">
+            <div class="card-footer">Arahkan kamera ke gambar ini</div>
+        </div>
+        <div class="card sedih">
+            <div class="card-header">😢 Sedih <small style="font-weight:400;font-size:0.8rem;">(marker 1)</small></div>
+            <img src="assets/markers/raccoon-color.png" alt="Kartu marker Sedih">
+            <div class="card-footer">Arahkan kamera ke gambar ini</div>
+        </div>
+        <div class="card marah">
+            <div class="card-header">😠 Marah <small style="font-weight:400;font-size:0.8rem;">(marker 2)</small></div>
+            <img src="assets/markers/bear.png" alt="Kartu marker Marah">
+            <div class="card-footer">Arahkan kamera ke gambar ini</div>
+        </div>
+        <div class="card takut">
+            <div class="card-header">😨 Takut <small style="font-weight:400;font-size:0.8rem;">(marker 3)</small></div>
+            <img src="assets/markers/raccoon.png" alt="Kartu marker Takut">
+            <div class="card-footer">Arahkan kamera ke gambar ini</div>
+        </div>
+    </div>
+
+    <a href="index.html" class="launch-btn">🚀 Buka Aplikasi AR</a>
+
+    <div class="note">
+        <strong>📋 Cara Testing:</strong>
+        <div class="step"><div class="step-num">1</div> Buka halaman ini di satu perangkat (misal laptop)</div>
+        <div class="step"><div class="step-num">2</div> Buka <strong>index.html</strong> di perangkat lain (HP) via URL GitHub Pages</div>
+        <div class="step"><div class="step-num">3</div> Arahkan kamera HP ke salah satu kartu di layar laptop</div>
+        <div class="step"><div class="step-num">4</div> Animasi 3D placeholder akan muncul di atas kartu 🎉</div>
+        <br>
+        <strong>⚠️ Catatan:</strong> File marker ini adalah contoh dari MindAR untuk keperluan testing.
+        Untuk versi final ALDA, kartu emosi asli (senang, sedih, marah, takut, terkejut) perlu dikompilasi
+        menggunakan <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile/" target="_blank">MindAR Compiler</a>.
+    </div>
+</body>
+</html>
