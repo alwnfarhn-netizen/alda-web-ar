@@ -41,7 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!MINDAR || !MINDAR.IMAGE) {
-                throw new Error("MindAR library tidak ditemukan. Pastikan koneksi internet stabil.");
+                throw new Error("Library MindAR gagal dimuat. Periksa koneksi internet Anda.");
+            }
+
+            if (!THREE.GLTFLoader) {
+                console.warn("GLTFLoader tidak ditemukan di namespace THREE. Pastikan script loader sudah terpasang.");
             }
 
             // 2. Setup MindAR Three.js
@@ -250,12 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memuat model GLTF/GLB untuk emosi tertentu
      */
     function loadEmotionModel(emotion, anchor) {
-        // Cek apakah GLTFLoader tersedia (biasanya ada di window.THREE jika pakai bundle MindAR)
-        // Jika tidak, buat placeholder sebagai fallback langsung
+        // Gunakan GLTFLoader dari THREE global
         const loader = window.THREE.GLTFLoader ? new window.THREE.GLTFLoader() : null;
 
         if (!loader) {
-            console.warn(`GLTFLoader tidak ditemukan, menggunakan placeholder untuk ${emotion.id}`);
+            console.warn(`GLTFLoader tidak tersedia, menggunakan placeholder untuk ${emotion.id}`);
             const placeholder = createPlaceholderFace(emotion.id);
             placeholder.name = "placeholder";
             anchor.group.add(placeholder);
