@@ -142,12 +142,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            setLoadingMsg('Menghubungkan kamera...');
-            await mindarThree.start();
-
-            // [E4 Fix] Null-check sebelum manipulasi loadingScreen
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            console.log('[ALDA] AR Ready');
+            const startBtn = document.getElementById('start-ar-btn');
+            if (startBtn) {
+                setLoadingMsg('Sistem siap.');
+                const spinner = loadingScreen.querySelector('.spinner');
+                if (spinner) spinner.style.display = 'none';
+                startBtn.style.display = 'block';
+                
+                startBtn.addEventListener('click', async () => {
+                    try {
+                        if (!audioUnlocked) unlockAudioContext();
+                        startBtn.innerText = 'Menghubungkan Kamera...';
+                        startBtn.disabled = true;
+                        
+                        await mindarThree.start();
+                        if (loadingScreen) loadingScreen.style.display = 'none';
+                        console.log('[ALDA] AR Ready');
+                    } catch (err) {
+                        handleInitError(err);
+                    }
+                });
+            } else {
+                setLoadingMsg('Menghubungkan kamera...');
+                await mindarThree.start();
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                console.log('[ALDA] AR Ready');
+            }
 
             renderer.setAnimationLoop(() => {
                 const delta = clock.getDelta();
