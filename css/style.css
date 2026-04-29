@@ -1,0 +1,215 @@
+:root {
+  --primary-color: #A3D2CA;
+  --bg-white: #FFFFFF;
+  --text-dark: #4A4A4A;
+  --overlay-bg: rgba(255, 255, 255, 0.85);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --font-main: 'Outfit', 'Segoe UI', Roboto, sans-serif;
+  
+  /* Safe Areas for iOS */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100dvh; /* Dynamic Viewport Height */
+  overflow: hidden;
+  background-color: #000;
+  font-size: 16px; /* Base for rem */
+}
+
+body {
+  font-family: var(--font-main);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none; /* Mencegah zoom/scroll yang tidak diinginkan */
+}
+
+#container {
+  width: 100vw;
+  height: 100dvh;
+  position: relative;
+  transform: translate3d(0, 0, 0); /* GPU acceleration */
+}
+
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: calc(20px + var(--safe-top)) calc(20px + var(--safe-right)) calc(40px + var(--safe-bottom)) calc(20px + var(--safe-left));
+  box-sizing: border-box;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Emotion Label */
+.emotion-label {
+  background: var(--overlay-bg);
+  padding: 1.2rem 2rem;
+  border-radius: 1.25rem;
+  font-size: 1.75rem; /* ~28px */
+  font-weight: 600;
+  color: var(--text-dark);
+  align-self: center;
+  box-shadow: var(--shadow);
+  display: none;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  will-change: opacity, transform;
+  transform: translate3d(0, 10px, 0);
+  margin-bottom: 20px;
+}
+
+.emotion-label.visible {
+  display: block;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Scanning Indicator */
+.scanning-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  will-change: opacity;
+}
+
+.scan-box {
+  width: 12.5rem; /* ~200px */
+  height: 12.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  border-radius: 2rem;
+  margin-bottom: 1rem;
+}
+
+.scanning-indicator p {
+  color: white;
+  font-size: 1.125rem; /* ~18px */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin: 0;
+}
+
+/* Teacher Controls */
+.teacher-controls {
+  position: absolute;
+  top: calc(20px + var(--safe-top));
+  right: calc(20px + var(--safe-right));
+  display: flex;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.ctrl-btn {
+  width: 3rem; /* 48px target */
+  height: 3rem;
+  min-width: 44px; /* A11y minimum */
+  min-height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--overlay-bg);
+  font-size: 1.375rem; /* ~22px */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.9);
+}
+
+/* Loading Screen */
+#loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-white);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.spinner {
+  width: 3.125rem; /* ~50px */
+  height: 3.125rem;
+  border: 4px solid #F3F3F3;
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+  margin-bottom: 1.25rem;
+  will-change: transform;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Orientation Warning */
+.orientation-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-white);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.rotate-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  animation: rotate 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media screen and (orientation: landscape) {
+  .orientation-warning {
+    display: flex;
+  }
+}
+
+/* Browser compatibility fixes */
+@supports not (height: 100dvh) {
+  html, body, #container {
+    height: 100vh;
+  }
+}

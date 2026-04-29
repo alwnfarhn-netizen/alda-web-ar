@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>ALDA - Web AR untuk Siswa Autis</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#A3D2CA">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="ALDA - Ekspresi Emosi AR">
+    <meta property="og:description" content="Media visual support berbasis Augmented Reality untuk membantu siswa autis mengenali emosi.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/images/og-image.jpg">
+
+    <!-- Google Fonts: Outfit (Rounded & Readable) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- CSS Dasar -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Dependencies via CDN -->
+    <!-- MindAR & Three.js (Bundled) -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js"></script>
+    
+    <!-- Howler.js untuk Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+
+    <!-- App Logic (Module) -->
+    <script type="module" src="js/main.js"></script>
+</head>
+<body>
+    <div id="container">
+        <!-- Area Kamera AR akan di-inject oleh MindAR di sini -->
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <div id="scanning-indicator" class="scanning-indicator">
+                <div class="scan-box"></div>
+                <p>Arahkan kamera ke kartu</p>
+            </div>
+
+            <div id="emotion-label" class="emotion-label">Senang</div>
+            
+            <div class="teacher-controls">
+                <button id="restart-btn" class="ctrl-btn" title="Muat Ulang">🔄</button>
+                <button id="mute-btn" class="ctrl-btn" title="Suara">🔊</button>
+            </div>
+
+            <div id="loading-screen">
+                <div class="spinner"></div>
+                <p>Memuat media...</p>
+            </div>
+
+            <div class="orientation-warning">
+                <div class="rotate-icon">🔄</div>
+                <p>Putar ponsel ke mode tegak untuk pengalaman terbaik</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fallback jika HTTPS tidak aktif -->
+    <script>
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            alert('Aplikasi ini memerlukan koneksi HTTPS untuk mengakses kamera.');
+        }
+    </script>
+</body>
+</html>

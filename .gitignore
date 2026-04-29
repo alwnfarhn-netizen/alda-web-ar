@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Dev files
+.vscode/
+.idea/
+*.log
+
+# Project specific
+assets/markers/*.mind.tmp
+*.bak
