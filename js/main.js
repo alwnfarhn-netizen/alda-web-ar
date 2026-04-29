@@ -1,3 +1,4 @@
+import { MindARThree } from 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js';
 import emotions from './emotions.js';
 
 /**
@@ -8,7 +9,6 @@ import emotions from './emotions.js';
 document.addEventListener('DOMContentLoaded', () => {
     // Dependencies global dari CDN
     const THREE = window.THREE;
-    const MINDAR = window.MINDAR;
     const Howl = window.Howl;
 
     const loadingScreen = document.getElementById('loading-screen');
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("Browser Anda tidak mendukung akses kamera atau Anda tidak menggunakan HTTPS.");
             }
 
-            if (!MINDAR || !MINDAR.IMAGE) {
+            if (!MindARThree) {
                 throw new Error("Library MindAR gagal dimuat. Periksa koneksi internet Anda.");
             }
 
@@ -50,11 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Setup MindAR Three.js
-            mindarThree = new MINDAR.IMAGE.MindARThree({
+            mindarThree = new MindARThree({
                 container: container,
                 imageTargetSrc: 'assets/markers/targets.mind',
                 uiLoading: "no", // Kita gunakan UI loading buatan sendiri
-                uiScanning: "yes",
+                uiScanning: "no", // Gunakan UI custom di HTML
             });
 
             const { renderer, scene, camera } = mindarThree;
