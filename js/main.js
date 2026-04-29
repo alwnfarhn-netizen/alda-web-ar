@@ -1,4 +1,6 @@
+import * as THREE from 'three';
 import { MindARThree } from 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import emotions from './emotions.js';
 
 /**
@@ -8,7 +10,6 @@ import emotions from './emotions.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Dependencies global dari CDN
-    const THREE = window.THREE;
     const Howl = window.Howl;
 
     const loadingScreen = document.getElementById('loading-screen');
@@ -269,8 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memuat model GLTF/GLB untuk emosi tertentu
      */
     function loadEmotionModel(emotion, anchor) {
-        // Gunakan GLTFLoader dari THREE global
-        const loader = window.THREE.GLTFLoader ? new window.THREE.GLTFLoader() : null;
+        const loader = new GLTFLoader();
 
         if (!loader) {
             console.warn(`GLTFLoader tidak tersedia, menggunakan placeholder untuk ${emotion.id}`);
