@@ -10,7 +10,7 @@ import emotions from './emotions.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Dependencies global dari CDN
-    const Howl = window.Howl;
+    const Howl = window.Howl || null; // [E1 Fix] Guard: CDN Howler.js mungkin gagal dimuat
 
     const loadingScreen = document.getElementById('loading-screen');
     const emotionLabel = document.getElementById('emotion-label');
@@ -46,8 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("Library MindAR gagal dimuat. Periksa koneksi internet Anda.");
             }
 
-            if (!THREE.GLTFLoader) {
-                console.warn("GLTFLoader tidak ditemukan di namespace THREE. Pastikan script loader sudah terpasang.");
+            // [E2 Fix] GLTFLoader bukan bagian dari namespace THREE, cek dengan typeof
+            if (typeof GLTFLoader === 'undefined') {
+                console.warn("GLTFLoader tidak tersedia. Semua emosi akan menggunakan model placeholder.");
             }
 
             // 2. Setup MindAR Three.js
@@ -164,21 +165,26 @@ document.addEventListener('DOMContentLoaded', () => {
      * Inisialisasi objek audio Howl untuk setiap emosi
      */
     function initAudio() {
-        Object.values(emotions).forEach(config => {
-            try {
-                audioInstances[config.id] = new Howl({
-                    src: [config.audioPath, config.audioPath.replace('.mp3', '.ogg')],
-                    volume: 0.8,
-                    loop: false,
-                    preload: true,
-                    onloaderror: (id, error) => {
-                        console.warn(`Gagal load audio ${config.id}:`, error);
-                    }
-                });
-            } catch (e) {
-                console.warn(`Error init Howl untuk ${config.id}:`, e);
-            }
-        });
+        // [E1 Fix] Bungkus inisialisasi audio dalam guard Howl
+        if (!Howl) {
+            console.warn("Howler.js tidak tersedia atau gagal dimuat dari CDN. Audio dinonaktifkan.");
+        } else {
+            Object.values(emotions).forEach(config => {
+                try {
+                    audioInstances[config.id] = new Howl({
+                        src: [config.audioPath, config.audioPath.replace('.mp3', '.ogg')],
+                        volume: 0.8,
+                        loop: false,
+                        preload: true,
+                        onloaderror: (id, error) => {
+                            console.warn(`Gagal load audio ${config.id}:`, error);
+                        }
+                    });
+                } catch (e) {
+                    console.warn(`Error init Howl untuk ${config.id}:`, e);
+                }
+            });
+        }
 
         // Setup Mute Button
         const muteBtn = document.getElementById('mute-btn');
@@ -204,17 +210,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Interaction workaround untuk browser modern
-        window.addEventListener('touchstart', unlockAudio, { once: true });
-        window.addEventListener('click', unlockAudio, { once: true });
-        window.addEventListener('mousedown', unlockAudio, { once: true });
+        // [E1 Fix] Pasang listener unlock audio hanya jika Howl tersedia
+        if (Howl) {
+            window.addEventListener('touchstart', unlockAudio, { once: true });
+            window.addEventListener('click', unlockAudio, { once: true });
+            window.addEventListener('mousedown', unlockAudio, { once: true });
+        }
     }
 
     /**
      * Workaround untuk kebijakan autoplay browser (terutama iOS Safari)
      */
     function unlockAudio() {
-        if (audioUnlocked) return;
+        if (!Howl || audioUnlocked) return; // [E1 Fix] Guard jika Howl tidak tersedia
         
         // Resume AudioContext jika dalam keadaan suspended (khusus Chrome/Safari)
         if (Howler.ctx && Howler.ctx.state === 'suspended') {
@@ -240,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memutar audio emosi tertentu dan menghentikan yang lain
      */
     function playEmotionAudio(emotionId) {
-        if (isMuted || !audioUnlocked) return;
+        if (!Howl || isMuted || !audioUnlocked) return; // [E1 Fix]
 
         try {
             // Stop semua audio lain agar tidak tumpang tindih
@@ -270,16 +278,17 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memuat model GLTF/GLB untuk emosi tertentu
      */
     function loadEmotionModel(emotion, anchor) {
-        const loader = new GLTFLoader();
-
-        if (!loader) {
+        // [E3 Fix] Cek typeof SEBELUM instansiasi — new GLTFLoader() tidak pernah return null
+        if (typeof GLTFLoader === 'undefined') {
             console.warn(`GLTFLoader tidak tersedia, menggunakan placeholder untuk ${emotion.id}`);
             const placeholder = createPlaceholderFace(emotion.id);
             placeholder.name = "placeholder";
-            placeholders.push(placeholder); // Registrasi untuk animasi
+            placeholders.push(placeholder);
             anchor.group.add(placeholder);
             return;
         }
+
+        const loader = new GLTFLoader();
 
         loader.load(
             emotion.modelPath,
@@ -338,6 +347,13 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleInitError(error) {
         console.error("AR Init Error:", error);
+
+        // [E4 Fix] Guard terhadap null jika elemen tidak ditemukan di DOM
+        if (!loadingScreen) {
+            console.error("loadingScreen tidak ditemukan di DOM, tidak dapat menampilkan pesan error.");
+            return;
+        }
+
         loadingScreen.innerHTML = `
             <div style="padding: 20px; text-align: center; color: #333;">
                 <p>⚠️ <strong>Gagal Memulai AR</strong></p>
