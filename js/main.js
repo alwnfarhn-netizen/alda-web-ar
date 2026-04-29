@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let mindarThree = null;
     let audioInstances = {}; // Menyimpan instance Howl per emosi
     let mixers = []; // Menyimpan AnimationMixer untuk update frame
+    let placeholders = []; // Menyimpan model placeholder untuk rotasi
     let clock = new THREE.Clock(); // Untuk delta time animasi
     let isMuted = false;
     let audioUnlocked = false; // Workaround autoplay browser
@@ -140,13 +141,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renderer.setAnimationLoop(() => {
                 const delta = clock.getDelta();
                 
-                // Update semua AnimationMixer
+                // 1. Update semua AnimationMixer (untuk model GLTF)
                 mixers.forEach(mixer => mixer.update(delta));
 
-                // Animasi rotasi halus untuk model placeholder (yang tidak punya mixer)
-                scene.traverse((obj) => {
-                    if (obj.name === "placeholder" && obj.visible) {
-                        obj.rotation.y += 0.01;
+                // 2. Animasi rotasi halus untuk model placeholder (lebih efisien tanpa scene.traverse)
+                placeholders.forEach(p => {
+                    if (p.visible) {
+                        p.rotation.y += 0.01;
                     }
                 });
 
@@ -261,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn(`GLTFLoader tidak tersedia, menggunakan placeholder untuk ${emotion.id}`);
             const placeholder = createPlaceholderFace(emotion.id);
             placeholder.name = "placeholder";
+            placeholders.push(placeholder); // Registrasi untuk animasi
             anchor.group.add(placeholder);
             return;
         }
@@ -292,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn(`Gagal memuat model ${emotion.id}, menggunakan placeholder.`, error);
                 const placeholder = createPlaceholderFace(emotion.id);
                 placeholder.name = "placeholder";
+                placeholders.push(placeholder); // Registrasi untuk animasi
                 anchor.group.add(placeholder);
             }
         );
