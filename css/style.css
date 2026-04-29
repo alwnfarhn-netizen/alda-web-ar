@@ -1,7 +1,7 @@
 :root {
   --primary-color: #A3D2CA;
   --bg-white: #FFFFFF;
-  --text-dark: #2D3436; /* Higher contrast dark gray */
+  --text-dark: #000000; /* Pure black for maximum contrast on pastel colors */
   --overlay-bg: rgba(255, 255, 255, 0.90); /* Increased opacity for better contrast */
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   --font-main: 'Outfit', 'Segoe UI', Roboto, sans-serif;
@@ -84,6 +84,7 @@ body {
   /* [P5 Fix] Hapus will-change permanen — promosi layer GPU hanya saat transisi aktif */
   transform: translate3d(0, 10px, 0);
   margin-bottom: 20px;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.6); /* White halo to boost contrast against mid-tone backgrounds */
 }
 
 .emotion-label.visible {
@@ -155,6 +156,11 @@ body {
 
 .ctrl-btn:active {
   transform: scale(0.9);
+}
+
+.ctrl-btn:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 4px;
 }
 
 /* Loading Screen */

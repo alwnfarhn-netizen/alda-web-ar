@@ -1,4 +1,6 @@
-import { MindARThree } from 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MindARThree } from 'mindar-image-three';
 import emotions from './emotions.js';
 
 /**
@@ -12,14 +14,11 @@ import emotions from './emotions.js';
  * A1, A3, A5      — accessibility fixes
  */
 
-// [E1 Fix] Tunggu semua resource global siap sebelum init, bukan langsung saat DOMContentLoaded.
-// THREE & Howler diload via <script> di <head>; module dieksekusi SETELAH script sync selesai,
-// sehingga window.THREE dan window.Howl sudah pasti tersedia saat module berjalan.
-const THREE  = window.THREE;
+// [E1 Fix] Howler diload via <script> di <head>; module dieksekusi SETELAH script sync selesai.
+// THREE diload via ES Modules di atas.
 const Howler = window.Howler;
 
-// Validasi awal — berikan error yang jelas jika dependency CDN gagal load
-if (!THREE)   console.error('[ALDA] Three.js gagal dimuat dari CDN.');
+// Validasi awal
 if (!Howler)  console.error('[ALDA] Howler.js gagal dimuat dari CDN.');
 
 // ─── Runtime state (terpisah dari konfigurasi di emotions.js) ─────────────────
@@ -71,12 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Library MindAR gagal dimuat. Periksa koneksi internet Anda.');
             }
 
-            // [E2/E3 Fix] GLTFLoader diinjeksi ke THREE.GLTFLoader oleh script CDN di head.
-            // Pengecekan yang benar: typeof THREE.GLTFLoader === 'function'
-            const gltfLoaderAvailable = typeof THREE?.GLTFLoader === 'function';
-            if (!gltfLoaderAvailable) {
-                console.warn('[ALDA] GLTFLoader tidak tersedia. Semua model akan diganti placeholder.');
-            }
+            // GLTFLoader sudah diimpor via ES Modules
+            const gltfLoaderAvailable = true;
 
             setLoadingMsg('Memulai AR...');
             mindarThree = new MindARThree({
@@ -156,7 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             renderer.setAnimationLoop(() => {
                 const delta = clock.getDelta();
-                mixers.forEach(mixer => mixer.update(delta));
+                Object.values(runtimeState).forEach(state => {
+                    if (state.isActive && state.mixer) {
+                        state.mixer.update(delta);
+                    }
+                });
                 placeholders.forEach(p => {
                     if (p.visible) p.rotation.y += 0.01;
                 });
@@ -224,6 +223,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (restartBtn) {
             restartBtn.addEventListener('click', () => window.location.reload());
         }
+
+        // Pastikan audio bisa terbuka via sembarang interaksi user di layar (Fix iOS Audio Edge-Case)
+        const unlockOnInteract = () => {
+            if (!audioUnlocked) unlockAudioContext();
+            document.body.removeEventListener('click', unlockOnInteract);
+            document.body.removeEventListener('touchstart', unlockOnInteract);
+        };
+        document.body.addEventListener('click', unlockOnInteract);
+        document.body.addEventListener('touchstart', unlockOnInteract);
     }
 
     // ─── Audio Unlock ────────────────────────────────────────────────────────────
@@ -305,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const loader = new THREE.GLTFLoader();
+        const loader = new GLTFLoader();
 
         loader.load(
             emotion.modelPath,
@@ -342,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = runtimeState[emotionId];
         if (state?.mixer && state?.animations?.length > 0) {
             state.mixer.clipAction(state.animations[0]).reset().play();
+            state.isActive = true;
         }
     }
 
@@ -349,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = runtimeState[emotionId];
         if (state?.mixer) {
             state.mixer.stopAllAction();
+            state.isActive = false;
         }
     }
 
@@ -389,33 +399,73 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingScreen.style.display = 'flex';
     }
 
+    // ─── Cache & Shared Materials (Fix Performa/Memori) ─────────────────────────
+    const placeholderTextureCache = {};
+    const sharedGeometries = {};
+    const featureMat = new THREE.MeshPhongMaterial({ color: 0x000000 });
+
+    function getSharedGeometry(key, creatorFunc) {
+        if (!sharedGeometries[key]) sharedGeometries[key] = creatorFunc();
+        return sharedGeometries[key];
+    }
+
     // ─── Placeholder Face (3D Primitives) ────────────────────────────────────────
-    // [P1 Fix] Kurangi segmen sphere dari 32×32 → 16×16 (1/4 jumlah segitiga)
-    // [P2 Fix] Cache CanvasTexture per emosi, tidak dibuat ulang setiap panggilan
     function createPlaceholderFace(emotionId) {
         const config = emotions[emotionId];
         const group  = new THREE.Group();
 
         try {
-            // Kepala — [P1 Fix] 16,16 sudah cukup untuk placeholder
-            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const headGeo = getSharedGeometry('head', () => new THREE.SphereGeometry(0.5, 16, 16));
             const headMat = new THREE.MeshPhongMaterial({ color: config.color });
             group.add(new THREE.Mesh(headGeo, headMat));
 
-            // Mata
-            const eyeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const eyeMat = new THREE.MeshPhongMaterial({ color: 0x000000 });
-            const leftEye  = new THREE.Mesh(eyeGeo, eyeMat);
-            leftEye.position.set(-0.2, 0.1, 0.45);
-            const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-            rightEye.position.set(0.2, 0.1, 0.45);
-            group.add(leftEye, rightEye);
+            let leftEye, rightEye, mouth;
 
-            // Mulut
-            const mouthGeo = new THREE.BoxGeometry(0.3, 0.1, 0.1);
-            const mouth = new THREE.Mesh(mouthGeo, eyeMat);
-            mouth.position.set(0, -0.2, 0.45);
-            group.add(mouth);
+            if (emotionId === 'senang') {
+                const eyeGeo = getSharedGeometry('eyeSenang', () => new THREE.BoxGeometry(0.1, 0.15, 0.1));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.15, 0.45);
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.15, 0.45);
+                
+                const mouthGeo = getSharedGeometry('mouthSenang', () => new THREE.BoxGeometry(0.35, 0.1, 0.1));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.15, 0.45);
+            } else if (emotionId === 'sedih') {
+                const eyeGeo = getSharedGeometry('eyeSedih', () => new THREE.BoxGeometry(0.12, 0.08, 0.1));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.05, 0.46); leftEye.rotation.z = -0.2;
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.05, 0.46); rightEye.rotation.z = 0.2;
+                
+                const mouthGeo = getSharedGeometry('mouthSedih', () => new THREE.BoxGeometry(0.25, 0.08, 0.1));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.25, 0.45);
+            } else if (emotionId === 'marah') {
+                const eyeGeo = getSharedGeometry('eyeMarah', () => new THREE.BoxGeometry(0.15, 0.08, 0.1));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.1, 0.46); leftEye.rotation.z = 0.3;
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.1, 0.46); rightEye.rotation.z = -0.3;
+                
+                const mouthGeo = getSharedGeometry('mouthMarah', () => new THREE.BoxGeometry(0.25, 0.08, 0.1));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.2, 0.45);
+            } else if (emotionId === 'takut') {
+                const eyeGeo = getSharedGeometry('eyeTakut', () => new THREE.CylinderGeometry(0.08, 0.08, 0.05, 16));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.15, 0.45); leftEye.rotation.x = Math.PI / 2;
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.15, 0.45); rightEye.rotation.x = Math.PI / 2;
+                
+                const mouthGeo = getSharedGeometry('mouthTakut', () => new THREE.BoxGeometry(0.15, 0.1, 0.1));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.25, 0.45);
+            } else if (emotionId === 'terkejut') {
+                const eyeGeo = getSharedGeometry('eyeTerkejut', () => new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.2, 0.43); leftEye.rotation.x = Math.PI / 2;
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.2, 0.43); rightEye.rotation.x = Math.PI / 2;
+                
+                const mouthGeo = getSharedGeometry('mouthTerkejut', () => new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.15, 0.46); mouth.rotation.x = Math.PI / 2;
+            } else {
+                const eyeGeo = getSharedGeometry('eyeDef', () => new THREE.BoxGeometry(0.1, 0.1, 0.1));
+                leftEye = new THREE.Mesh(eyeGeo, featureMat); leftEye.position.set(-0.2, 0.1, 0.45);
+                rightEye = new THREE.Mesh(eyeGeo, featureMat); rightEye.position.set(0.2, 0.1, 0.45);
+                
+                const mouthGeo = getSharedGeometry('mouthDef', () => new THREE.BoxGeometry(0.3, 0.1, 0.1));
+                mouth = new THREE.Mesh(mouthGeo, featureMat); mouth.position.set(0, -0.2, 0.45);
+            }
+            
+            group.add(leftEye, rightEye, mouth);
 
             // Label Teks — [P2 Fix] gunakan cache agar tidak buat canvas/texture baru tiap kali
             if (!placeholderTextureCache[emotionId]) {

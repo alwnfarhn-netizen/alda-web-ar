@@ -41,8 +41,15 @@ const emotions = {
     audioPath: "assets/audio/takut.mp3",
     markerIndex: 3,
     color: "#A29BFE"
+  },
+  terkejut: {
+    id: "terkejut",
+    label: "Terkejut",
+    modelPath: "assets/models/terkejut.glb",
+    audioPath: "assets/audio/terkejut.mp3",
+    markerIndex: 4,
+    color: "#00b894"
   }
-  // terkejut (markerIndex: 4) — akan diaktifkan setelah targets.mind final dikompilasi
 };
 
 export default emotions;
