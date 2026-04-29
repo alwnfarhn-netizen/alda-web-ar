@@ -26,7 +26,8 @@ html, body {
 body {
   font-family: var(--font-main);
   -webkit-tap-highlight-color: transparent;
-  touch-action: none; /* Mencegah zoom/scroll yang tidak diinginkan */
+  /* [P4 Fix] touch-action hanya di #container, bukan body global.
+     Ini memungkinkan browser menggunakan passive event optimization. */
 }
 
 #container {
@@ -34,6 +35,20 @@ body {
   height: 100dvh;
   position: relative;
   transform: translate3d(0, 0, 0); /* GPU acceleration */
+  touch-action: none; /* [P4 Fix] Hanya nonaktifkan gesture di area AR, bukan seluruh body */
+}
+
+/* [A1 Fix] Visually hidden text untuk screen reader — tampil hanya untuk AT */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 #ui-overlay {

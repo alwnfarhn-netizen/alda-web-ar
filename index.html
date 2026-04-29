@@ -38,6 +38,16 @@
 
     <!-- App Logic (Module) -->
     <script type="module" src="js/main.js"></script>
+    <!-- [E5 Fix] Fallback untuk browser tanpa dukungan ES Modules -->
+    <script nomodule>
+        var ls = document.getElementById('loading-screen');
+        var msg = document.getElementById('loading-msg');
+        if (ls && msg) {
+            msg.textContent = 'Browser Anda tidak mendukung Web AR. Gunakan Chrome 61+ atau Safari 10.1+.';
+            var sp = ls.querySelector('.spinner');
+            if (sp) sp.style.display = 'none';
+        }
+    </script>
 </head>
 <body>
     <div id="container">
@@ -50,16 +60,23 @@
                 <p>Arahkan kamera ke kartu</p>
             </div>
 
-            <div id="emotion-label" class="emotion-label" aria-live="polite">Senang</div>
+            <div id="emotion-label" class="emotion-label" aria-live="polite" aria-atomic="true"></div>
             
             <div class="teacher-controls" role="group" aria-label="Kontrol Pengembang/Guru">
-                <button id="restart-btn" class="ctrl-btn" aria-label="Muat ulang aplikasi" title="Muat Ulang">🔄</button>
-                <button id="mute-btn" class="ctrl-btn" aria-label="Aktifkan atau matikan suara" title="Suara">🔊</button>
+                <button id="restart-btn" class="ctrl-btn" aria-label="Muat ulang aplikasi" title="Muat Ulang">
+                    <span aria-hidden="true">🔄</span>
+                    <span class="sr-only">Muat Ulang</span>
+                </button>
+                <button id="mute-btn" class="ctrl-btn" aria-label="Aktifkan atau matikan suara" title="Suara">
+                    <span aria-hidden="true" id="mute-icon">🔊</span>
+                    <span class="sr-only" id="mute-label">Matikan Suara</span>
+                </button>
             </div>
 
-            <div id="loading-screen">
-                <div class="spinner"></div>
-                <p>Memuat media...</p>
+            <!-- [A3 Fix] role="status" + aria-live agar screen reader umumkan perubahan loading -->
+            <div id="loading-screen" role="status" aria-live="polite" aria-label="Memuat aplikasi AR">
+                <div class="spinner" aria-hidden="true"></div>
+                <p id="loading-msg">Memuat media...</p>
             </div>
 
             <div class="orientation-warning">
