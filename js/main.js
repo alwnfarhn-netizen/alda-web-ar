@@ -1,6 +1,4 @@
-import * as THREE from 'three';
 import { MindARThree } from 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import emotions from './emotions.js';
 
 /**
@@ -10,7 +8,8 @@ import emotions from './emotions.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Dependencies global dari CDN
-    const Howl = window.Howl || null; // [E1 Fix] Guard: CDN Howler.js mungkin gagal dimuat
+    const THREE = window.THREE;
+    const Howl = window.Howl;
 
     const loadingScreen = document.getElementById('loading-screen');
     const emotionLabel = document.getElementById('emotion-label');
@@ -46,9 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("Library MindAR gagal dimuat. Periksa koneksi internet Anda.");
             }
 
-            // [E2 Fix] GLTFLoader bukan bagian dari namespace THREE, cek dengan typeof
-            if (typeof GLTFLoader === 'undefined') {
-                console.warn("GLTFLoader tidak tersedia. Semua emosi akan menggunakan model placeholder.");
+            if (!THREE.GLTFLoader) {
+                console.warn("GLTFLoader tidak ditemukan di namespace THREE. Pastikan script loader sudah terpasang.");
             }
 
             // 2. Setup MindAR Three.js
@@ -132,37 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            // 5. Jalankan MindAR dengan timeout agar tidak hang jika targets.mind tidak ada
-            const TIMEOUT_MS = 20000; // 20 detik
-            const startTimeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(
-                    "Waktu muat habis (20 detik). " +
-                    "Pastikan file targets.mind ada di assets/markers/ " +
-                    "dan koneksi internet stabil."
-                )), TIMEOUT_MS)
-            );
-
-            // Perbarui teks loading agar user tahu apa yang sedang terjadi
-            const loadingText = loadingScreen.querySelector('p');
-            if (loadingText) loadingText.textContent = 'Meminta izin kamera...';
-
-            await Promise.race([mindarThree.start(), startTimeout]);
-
-            if (loadingText) loadingText.textContent = 'AR siap!';
-
-            // [W1 Fix] Izin kamera = user gesture → coba resume AudioContext sekarang
-            // Ini memastikan audio bisa diputar di scan pertama tanpa tap tambahan
-            if (Howl && !audioUnlocked && Howler.ctx && Howler.ctx.state === 'suspended') {
-                Howler.ctx.resume().then(() => {
-                    audioUnlocked = true;
-                    console.log("ALDA: Audio unlocked setelah kamera diizinkan.");
-                }).catch(() => {
-                    console.log("ALDA: Audio menunggu interaksi eksplisit user.");
-                });
-            } else if (Howl && !audioUnlocked && Howler.ctx && Howler.ctx.state === 'running') {
-                audioUnlocked = true; // AudioContext sudah running, langsung unlock
-            }
-
+            // 5. Jalankan MindAR
+            await mindarThree.start();
+            
             // Sembunyikan loading screen saat siap
             loadingScreen.style.display = 'none';
             console.log("ALDA: AR Ready");
@@ -193,26 +163,21 @@ document.addEventListener('DOMContentLoaded', () => {
      * Inisialisasi objek audio Howl untuk setiap emosi
      */
     function initAudio() {
-        // [E1 Fix] Bungkus inisialisasi audio dalam guard Howl
-        if (!Howl) {
-            console.warn("Howler.js tidak tersedia atau gagal dimuat dari CDN. Audio dinonaktifkan.");
-        } else {
-            Object.values(emotions).forEach(config => {
-                try {
-                    audioInstances[config.id] = new Howl({
-                        src: [config.audioPath, config.audioPath.replace('.mp3', '.ogg')],
-                        volume: 0.8,
-                        loop: false,
-                        preload: true,
-                        onloaderror: (id, error) => {
-                            console.warn(`Gagal load audio ${config.id}:`, error);
-                        }
-                    });
-                } catch (e) {
-                    console.warn(`Error init Howl untuk ${config.id}:`, e);
-                }
-            });
-        }
+        Object.values(emotions).forEach(config => {
+            try {
+                audioInstances[config.id] = new Howl({
+                    src: [config.audioPath, config.audioPath.replace('.mp3', '.ogg')],
+                    volume: 0.8,
+                    loop: false,
+                    preload: true,
+                    onloaderror: (id, error) => {
+                        console.warn(`Gagal load audio ${config.id}:`, error);
+                    }
+                });
+            } catch (e) {
+                console.warn(`Error init Howl untuk ${config.id}:`, e);
+            }
+        });
 
         // Setup Mute Button
         const muteBtn = document.getElementById('mute-btn');
@@ -238,19 +203,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // [E1 Fix] Pasang listener unlock audio hanya jika Howl tersedia
-        if (Howl) {
-            window.addEventListener('touchstart', unlockAudio, { once: true });
-            window.addEventListener('click', unlockAudio, { once: true });
-            window.addEventListener('mousedown', unlockAudio, { once: true });
-        }
+        // Interaction workaround untuk browser modern
+        window.addEventListener('touchstart', unlockAudio, { once: true });
+        window.addEventListener('click', unlockAudio, { once: true });
+        window.addEventListener('mousedown', unlockAudio, { once: true });
     }
 
     /**
      * Workaround untuk kebijakan autoplay browser (terutama iOS Safari)
      */
     function unlockAudio() {
-        if (!Howl || audioUnlocked) return; // [E1 Fix] Guard jika Howl tidak tersedia
+        if (audioUnlocked) return;
         
         // Resume AudioContext jika dalam keadaan suspended (khusus Chrome/Safari)
         if (Howler.ctx && Howler.ctx.state === 'suspended') {
@@ -276,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memutar audio emosi tertentu dan menghentikan yang lain
      */
     function playEmotionAudio(emotionId) {
-        if (!Howl || isMuted || !audioUnlocked) return; // [E1 Fix]
+        if (isMuted || !audioUnlocked) return;
 
         try {
             // Stop semua audio lain agar tidak tumpang tindih
@@ -306,17 +269,17 @@ document.addEventListener('DOMContentLoaded', () => {
      * Memuat model GLTF/GLB untuk emosi tertentu
      */
     function loadEmotionModel(emotion, anchor) {
-        // [E3 Fix] Cek typeof SEBELUM instansiasi — new GLTFLoader() tidak pernah return null
-        if (typeof GLTFLoader === 'undefined') {
+        // Gunakan GLTFLoader dari THREE global
+        const loader = window.THREE.GLTFLoader ? new window.THREE.GLTFLoader() : null;
+
+        if (!loader) {
             console.warn(`GLTFLoader tidak tersedia, menggunakan placeholder untuk ${emotion.id}`);
             const placeholder = createPlaceholderFace(emotion.id);
             placeholder.name = "placeholder";
-            placeholders.push(placeholder);
+            placeholders.push(placeholder); // Registrasi untuk animasi
             anchor.group.add(placeholder);
             return;
         }
-
-        const loader = new GLTFLoader();
 
         loader.load(
             emotion.modelPath,
@@ -375,43 +338,20 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleInitError(error) {
         console.error("AR Init Error:", error);
-
-        // [E4 Fix] Guard terhadap null jika elemen tidak ditemukan di DOM
-        if (!loadingScreen) {
-            console.error("loadingScreen tidak ditemukan di DOM, tidak dapat menampilkan pesan error.");
-            return;
-        }
-
-        // Deteksi jenis error untuk pesan yang lebih spesifik
-        const msg = error.message || '';
-        let userMessage = '';
-        let hint = '';
-
-        if (msg.includes('camera') || msg.includes('permission') || msg.includes('NotAllowed')) {
-            userMessage = '📷 Izin kamera ditolak.';
-            hint = 'Ketuk ikon kunci di address bar browser, lalu aktifkan izin Kamera, kemudian muat ulang.';
-        } else if (msg.includes('Waktu muat habis') || msg.includes('targets.mind')) {
-            userMessage = '📁 File marker (targets.mind) tidak ditemukan.';
-            hint = 'Upload file targets.mind ke folder <code>assets/markers/</code> menggunakan MindAR Image Compiler.';
-        } else if (msg.includes('MindAR') || msg.includes('mind-ar')) {
-            userMessage = '📦 Library MindAR gagal dimuat.';
-            hint = 'Periksa koneksi internet Anda, lalu coba lagi.';
-        } else {
-            userMessage = '⚠️ Gagal memulai AR.';
-            hint = msg || 'Terjadi kesalahan tidak dikenal.';
-        }
-
         loadingScreen.innerHTML = `
-            <div style="padding:24px;text-align:center;color:#333;font-family:sans-serif;max-width:320px;margin:0 auto">
-                <p style="font-size:1.1rem;font-weight:700;margin-bottom:8px">${userMessage}</p>
-                <p style="font-size:0.9rem;color:#555;line-height:1.5;margin-bottom:20px">${hint}</p>
-                <button onclick="window.location.reload()"
-                    style="padding:10px 28px;border-radius:24px;border:none;background:#4a90e2;color:white;font-size:1rem;cursor:pointer">
-                    🔄 Coba Lagi
-                </button>
-                ${!window.isSecureContext ? '<p style="font-size:11px;color:#888;margin-top:14px">⚠️ Web AR memerlukan HTTPS.</p>' : ''}
+            <div style="padding: 20px; text-align: center; color: #333;">
+                <p>⚠️ <strong>Gagal Memulai AR</strong></p>
+                <p>${error.message.includes('camera') || error.message.includes('permission') 
+                    ? "Izinkan akses kamera untuk menggunakan media ini." 
+                    : error.message}</p>
+                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 10px 20px; border-radius: 20px; border: none; background: #4a90e2; color: white;">Coba Lagi</button>
             </div>
         `;
+
+        // Cek WebXR (Optional info)
+        if (!window.isSecureContext) {
+            loadingScreen.innerHTML += `<p style="font-size: 12px; margin-top: 10px;">Catatan: Web AR memerlukan koneksi HTTPS.</p>`;
+        }
     }
 
     /**
@@ -422,8 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const group = new THREE.Group();
 
         try {
-            // Kepala — [P1 Fix] 16×16 segmen cukup untuk placeholder, hemat ~75% polygon vs 32×32
-            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            // Kepala
+            const headGeo = new THREE.SphereGeometry(0.5, 32, 32);
             const headMat = new THREE.MeshPhongMaterial({ color: config.color });
             const head = new THREE.Mesh(headGeo, headMat);
             group.add(head);
@@ -445,23 +385,17 @@ document.addEventListener('DOMContentLoaded', () => {
             group.add(mouth);
 
             // Label Teks (Sprite)
-            // [P2 Fix] Canvas 128×32 (setengah dari 256×64) — hemat 75% memori GPU texture
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = 128; canvas.height = 32;
-            context.font = 'Bold 20px Arial';
+            canvas.width = 256; canvas.height = 64;
+            context.font = 'Bold 40px Arial';
             context.fillStyle = 'white';
             context.textAlign = 'center';
-            context.fillText(config.label.toUpperCase(), 64, 22);
+            context.fillText(config.label.toUpperCase(), 128, 45);
             const texture = new THREE.CanvasTexture(canvas);
-            texture.needsUpdate = true;
-            const spriteMat = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(spriteMat);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
             sprite.position.set(0, 0.7, 0);
             sprite.scale.set(1, 0.25, 1);
-            // Simpan referensi untuk disposal nanti jika dibutuhkan
-            group.userData.texture = texture;
-            group.userData.spriteMat = spriteMat;
             group.add(sprite);
 
         } catch (e) {

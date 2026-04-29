@@ -26,15 +26,9 @@
     <link rel="stylesheet" href="css/style.css">
 
     <!-- Dependencies via CDN -->
-    <!-- Three.js (Module versions) -->
-    <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.145.0/examples/jsm/"
-      }
-    }
-    </script>
+    <!-- Core Three.js & Loaders (v0.145 provides global JS versions for loaders) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/GLTFLoader.js"></script>
 
     <!-- MindAR (Three.js version) -->
     <!-- MindAR (Loaded via module in main.js) -->
@@ -63,12 +57,8 @@
                 <button id="mute-btn" class="ctrl-btn" aria-label="Aktifkan atau matikan suara" title="Suara">🔊</button>
             </div>
 
-            <!-- [A3 Fix] role="status" + aria-live agar screen reader membaca perubahan loading -->
-            <div id="loading-screen"
-                 role="status"
-                 aria-live="polite"
-                 aria-label="Memuat aplikasi ALDA">
-                <div class="spinner" aria-hidden="true"></div>
+            <div id="loading-screen">
+                <div class="spinner"></div>
                 <p>Memuat media...</p>
             </div>
 
@@ -83,22 +73,6 @@
     <script>
         if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
             alert('Aplikasi ini memerlukan koneksi HTTPS untuk mengakses kamera.');
-        }
-    </script>
-
-    <!-- [E5 Fix] Fallback untuk browser lama yang tidak mendukung ES Modules -->
-    <script nomodule>
-        var ls = document.getElementById('loading-screen');
-        if (ls) {
-            ls.innerHTML = [
-                '<div style="padding:24px;text-align:center;color:#333;font-family:sans-serif">',
-                '<p style="font-size:1.5rem;margin-bottom:8px">⚠️ <strong>Browser Tidak Didukung</strong></p>',
-                '<p>Aplikasi ALDA memerlukan browser modern.<br>',
-                'Gunakan <strong>Google Chrome</strong> atau <strong>Safari</strong> terbaru.</p>',
-                '<p style="font-size:13px;color:#888;margin-top:12px">',
-                'Minimum: Chrome 61+, Safari 10.1+, Firefox 60+</p>',
-                '</div>'
-            ].join('');
         }
     </script>
 </body>
