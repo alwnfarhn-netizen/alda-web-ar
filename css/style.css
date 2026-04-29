@@ -94,9 +94,13 @@ body {
 .scan-box {
   width: 12.5rem; /* ~200px */
   height: 12.5rem;
-  border: 3px solid rgba(255, 255, 255, 0.6);
+  /* [A4 Fix] Kontras ditingkatkan: border lebih solid + shadow gelap di luar */
+  border: 3px solid rgba(255, 255, 255, 0.95);
   border-radius: 2rem;
   margin-bottom: 1rem;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.45),        /* Outline gelap untuk visibilitas */
+    0 4px 24px rgba(0, 0, 0, 0.25);       /* Drop shadow lembut */
 }
 
 .scanning-indicator p {
@@ -211,5 +215,31 @@ body {
 @supports not (height: 100dvh) {
   html, body, #container {
     height: 100vh;
+  }
+}
+
+/* [A2 Fix] Nonaktifkan semua animasi untuk pengguna dengan prefers-reduced-motion.
+   Penting untuk siswa/guru dengan vestibular disorder atau sensitivitas gerakan. */
+@media (prefers-reduced-motion: reduce) {
+  /* Hentikan spinner loading */
+  .spinner {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  /* Hentikan ikon putar di orientation-warning */
+  .rotate-icon {
+    animation: none;
+  }
+
+  /* Hapus transisi fade pada label emosi */
+  .emotion-label {
+    transition: none;
+    transform: none;
+  }
+
+  /* Hapus transisi transform pada tombol */
+  .ctrl-btn {
+    transition: none;
   }
 }

@@ -63,8 +63,12 @@
                 <button id="mute-btn" class="ctrl-btn" aria-label="Aktifkan atau matikan suara" title="Suara">🔊</button>
             </div>
 
-            <div id="loading-screen">
-                <div class="spinner"></div>
+            <!-- [A3 Fix] role="status" + aria-live agar screen reader membaca perubahan loading -->
+            <div id="loading-screen"
+                 role="status"
+                 aria-live="polite"
+                 aria-label="Memuat aplikasi ALDA">
+                <div class="spinner" aria-hidden="true"></div>
                 <p>Memuat media...</p>
             </div>
 
